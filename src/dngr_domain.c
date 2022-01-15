@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "domain.h"
+#include "dngr_domain.h"
 
 DngrDomain* dngr_domain_new(void (*deallocator)(void*)) {
 	DngrDomain* dom;

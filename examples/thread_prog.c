@@ -5,7 +5,7 @@
 #include <string.h>
 #include <pthread.h>
 
-#include "domain.h"
+#include "dngr_domain.h"
 
 #define NUM_ITERS 20
 

@@ -1,7 +1,7 @@
 CFLAGS = -Wall -Wextra -Wpedantic -O3 -std=c89 -Isrc/
 TEST_FLAGS = -fsanitize=address
 
-OBJS = domain.o list.o
+OBJS = dngr_domain.o dngr_list.o
 STATIC_LIB = libdanger.a
 
 TESTS = tests/test_list

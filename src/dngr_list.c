@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "list.h"
+#include "dngr_list.h"
 
 /* Allocate a new node with specified value and append to list */
 static DngrPtr* __dngr_list_append(DngrPtr** head, void* ptr) {

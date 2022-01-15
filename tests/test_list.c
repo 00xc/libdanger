@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "list.h"
+#include "dngr_list.h"
 
 #define W1 (void*)0xdeadbeef
 #define W2 (void*)0xdeafbabe

@@ -1,6 +1,7 @@
-#include <stdint.h>
+#ifndef __DNGR_DOMAIN_H
+#define __DNGR_DOMAIN_H
 
-#include "list.h"
+#include "dngr_list.h"
 
 #define DNGR_DEFER_DEALLOC 1
 
@@ -45,3 +46,5 @@ void dngr_swap(DngrDomain* dom, void* prot_ptr, void* new_val, int flags);
  * deallocated.
  */
 void dngr_cleanup(DngrDomain* dom, int flags);
+
+#endif
