@@ -53,6 +53,8 @@ int __dngr_list_remove(DngrPtr** head, uintptr_t ptr) {
 
 	DNGR_LIST_ITER(head, node) {
 		expected = atomic_load(&node->ptr);
+		if (expected == 0)
+			continue;
 		if (expected == ptr && atomic_cas(&node->ptr, &expected, &nullptr))
 			return 1;
 	}

@@ -105,6 +105,9 @@ void dngr_cleanup(DngrDomain* dom, int flags) {
 
 		ptr = node->ptr;
 
+		if (ptr == 0)
+			continue;
+
 		if (!__dngr_list_contains(&dom->pointers, ptr)) {
 
 			/* We can deallocate straight away */
