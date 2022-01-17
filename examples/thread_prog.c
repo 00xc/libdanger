@@ -1,4 +1,5 @@
 #define _GNU_SOURCE
+#include <assert.h>
 #include <err.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,7 +8,10 @@
 
 #include "dngr_domain.h"
 
+#define NUM_READERS 1
+#define NUM_WRITERS 1
 #define NUM_ITERS 20
+#define ARR_SIZE(x) sizeof(x)/sizeof(*x)
 
 typedef unsigned int uint;
 
@@ -30,6 +34,7 @@ Config* create_config() {
 }
 
 void delete_config(Config* conf) {
+	assert(conf != NULL);
 	free(conf);
 }
 
@@ -56,19 +61,17 @@ void* reader_thread(void* arg) {
 
 	(void)arg;
 
-	/* Wait until the writer starts modifying the config */
-	while (1) {
-		safe_config = dngr_load(config_dom, &shared_config);
-		i = safe_config->v1 + safe_config->v2;
-		dngr_drop(config_dom, safe_config);
-		if (i != 0)
-			break;
-	}
+	pthread_yield();
+	pthread_yield();
+	pthread_yield();
+	pthread_yield();
 
 	for (i = 0; i < NUM_ITERS; ++i) {
 		safe_config = dngr_load(config_dom, &shared_config);
-		print_config("read config   ", safe_config);
+		print_config("read config    ", safe_config);
 		dngr_drop(config_dom, safe_config);
+		pthread_yield();
+		pthread_yield();
 		pthread_yield();
 		pthread_yield();
 	}
@@ -82,15 +85,17 @@ void* writer_thread(void* arg) {
 
 	(void)arg;
 
-	srand(0x1000);
-
 	for (i = 0; i < NUM_ITERS/2; ++i) {
 		new_config = create_config();
 		new_config->v1 = rand();
 		new_config->v2 = rand();
 		new_config->v3 = rand();
-		print_config("updated config", new_config);
+		print_config("updating config", new_config);
 		dngr_swap(config_dom, &shared_config, new_config, 0);
+		print_config("updated config ", new_config);
+		pthread_yield();
+		pthread_yield();
+		pthread_yield();
 		pthread_yield();
 	}
 
@@ -98,19 +103,31 @@ void* writer_thread(void* arg) {
 }
 
 int main() {
-	pthread_t rd_thrd;
-	pthread_t wr_thrd;
+	pthread_t readers[NUM_READERS];
+	pthread_t writers[NUM_WRITERS];
+	unsigned int i;
 
 	init();
 
-	if (pthread_create(&rd_thrd, NULL, reader_thread, NULL))
-		warn("pthread_create");
+	/* Start threads */
+	for (i = 0; i < ARR_SIZE(readers); ++i) {
+		if (pthread_create(readers + i, NULL, reader_thread, NULL))
+			warn("pthread_create");
+	}
+	for (i = 0; i < ARR_SIZE(writers); ++i) {
+		if (pthread_create(writers + i, NULL, writer_thread, NULL))
+			warn("pthread_create");
+	}
 
-	if (pthread_create(&wr_thrd, NULL, writer_thread, NULL))
-		warn("pthread_create");
-
-	if (pthread_join(rd_thrd, NULL) || pthread_join(wr_thrd, NULL))
-		warn("pthread_join");
+	/* Wait for threads to finish */
+	for (i = 0; i < ARR_SIZE(readers); ++i) {
+		if (pthread_join(readers[i], NULL))
+			warn("pthread_join");
+	}
+	for (i = 0; i < ARR_SIZE(writers); ++i) {
+		if (pthread_join(writers[i], NULL))
+			warn("pthread_join");
+	}
 
 	deinit();
 

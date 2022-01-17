@@ -28,7 +28,7 @@ tests/test_list: tests/test_list.c $(STATIC_LIB)
 examples: $(EXAMPLES)
 
 examples/thread_prog: examples/thread_prog.c $(STATIC_LIB)
-	$(CC) $^ -o $@ $(CFLAGS) -pthread
+	$(CC) $^ -o $@ $(CFLAGS) $(TEST_FLAGS) -pthread
 
 clean:
 	rm -f $(OBJS)

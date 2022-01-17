@@ -30,7 +30,9 @@ void dngr_domain_free(DngrDomain* dom) {
 }
 
 void* dngr_load(DngrDomain* dom, void* prot_ptr) {
+	const void* const nullptr = NULL;
 	void* val;
+	void* tmp;
 	DngrPtr* node;
 
 	while (1) {
@@ -43,10 +45,12 @@ void* dngr_load(DngrDomain* dom, void* prot_ptr) {
 
 		/*
 		 * This pointer is being retired by another thread - remove this hazard pointer
-		 * and try again
+		 * and try again. We first try to remove the hazard pointer we just used. If someone
+		 * else used it to drop the same pointer, we walk the list.
 		 */
-		val = NULL;
-		atomic_store(&node->ptr, &val);
+		tmp = val;
+		if (!atomic_cas(&node->ptr, &tmp, &nullptr))
+			__dngr_list_remove(&dom->pointers, val);
 	}
 
 	return val;
