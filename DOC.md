@@ -1,12 +1,21 @@
 # Documentation #
 
+## Table of contents ##
+
+1. [Introduction](#introduction)
+1. [API](#api)
+2. [Code Example](#code-example)
+3. [Potential Pitfalls](#potential-pitfalls)
+
+## Introduction ##
+
 In order to share a pointer safely between threads, a domain needs to be created. A domain protects all of its users, and it is usually associated with an object to which access needs to be protected - if you have two independent objects, it would make sense to use two domains.
 
 A domain is created with `dngr_domain_new`, and its contents deallocated with `dngr_domain_free`. Once this is done, safe pointers to objects can be obtained with `dngr_load`, and dropped with `dngr_drop`. The shared pointer can be made point to a different address with `dngr_swap`.
 
 ## API ##
 
-The following documentation can be found in [domain.h](src/domain.h). See below for potential misuses.
+The following documentation can be found in [domain.h](src/domain.h).
 
 ```c
 /* Create a new domain on the heap */
@@ -52,7 +61,7 @@ int dngr_compare_and_swap(DngrDomain* dom, uintptr_t* prot_ptr, uintptr_t expect
 void dngr_cleanup(DngrDomain* dom, int flags);
 ```
 
-## Code example ##
+## Code Example ##
 
 The following is a simplified version of the example included in this repository ([thread_prog.c](examples/thread_prog.c)).
 
@@ -129,7 +138,9 @@ int main() {
 }
 ```
 
-## Potential misuses ##
+## Potential Pitfalls ##
+
+#### Dropping pointers ####
 
 API users must be careful to drop all safe pointers once they are done using them; not doing this can lead to memory leaks or deadlocks. Consider the following example:
 
@@ -142,4 +153,14 @@ API users must be careful to drop all safe pointers once they are done using the
 
 Here the current thread holds an undropped reference to `obj`, obtained with `dngr_load`, and since `dngr_compare_and_swap`'s `flags` have not been set to `DNGR_DEFER_DEALLOC`, if the CAS succeeds, the function will wait until all references are dropped; this will never happen, as the thread waiting also holds a reference. There are two possible solutions:
  - Drop `obj` via `dngr_drop` before calling `dngr_compare_and_swap`. Do this only if `ptr` is no longer going to be dereferenced.
- - Set `dngr_compare_and_swap`'s `flags` to `DNGR_DEFER_DEALLOC` and call `dngr_drop` afterwards.
+ - Set `dngr_compare_and_swap`'s `flags` to `DNGR_DEFER_DEALLOC`, call `dngr_drop` afterwards, and at some point later in the program, call `dngr_cleanup`.
+
+Another way to think about this issue is in terms of reference counting: if a thread forgets to decrease the reference count of a shared object, its memory will not be freed. Furthermore, if a thread attempts to wait until that reference count is zero, it will enter an infinite spinlock.
+
+#### Swapping in old pointers ####
+
+Using `dngr_swap` or `dngr_compare_and_swap` to set the shared pointer to an old value might lead to some nasty bugs. Once an old value has been removed by either of those functions, it should be considered that it is either freed or enqueued to be freed, and thus one should avoid performing that operation.
+
+#### Unbounded reference acquisition ####
+
+Currently, libdanger does not limit the amount of references one can acquire to a shared pointer, neither per-thread nor globally. This means that memory usage can also grow in an unbounded fashion, scaling linearly with the number of references acquired globally.
