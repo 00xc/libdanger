@@ -88,6 +88,15 @@ void dngr_swap(DngrDomain* dom, uintptr_t* prot_ptr, uintptr_t new_val, int flag
 	__dngr_cleanup_ptr(dom, old_obj, flags);
 }
 
+int dngr_compare_and_swap(DngrDomain* dom, uintptr_t* prot_ptr, uintptr_t expected_val, uintptr_t new_val, int flags) {
+
+	if (!atomic_cas(prot_ptr, &expected_val, &new_val))
+		return 0;
+
+	__dngr_cleanup_ptr(dom, expected_val, flags);
+	return 1;
+}
+
 void dngr_cleanup(DngrDomain* dom, int flags) {
 	DngrPtr* node;
 	uintptr_t ptr;
