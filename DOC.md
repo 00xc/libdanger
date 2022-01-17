@@ -28,13 +28,13 @@ void dngr_domain_free(DngrDomain* dom);
  * Load a safe pointer to a shared object. This pointer must be passed to `dngr_drop` once it is
  * no longer needed
  */
-void* dngr_load(DngrDomain* dom, void* prot_ptr);
+uintptr_t dngr_load(DngrDomain* dom, uintptr_t* prot_ptr);
 
 /*
  * Drop a safe pointer to a shared object. This pointer (`safe_val`) must have come from
  * `dngr_load`
  */
-void dngr_drop(DngrDomain* dom, void* safe_val);
+void dngr_drop(DngrDomain* dom, uintptr_t safe_val);
 
 /*
  * Swaps the contents of a shared pointer with a new pointer. The old value will be deallocated
@@ -44,7 +44,7 @@ void dngr_drop(DngrDomain* dom, void* safe_val);
  * deallocated if there are already no references to it; otherwise the cleanup will be done the
  * next time `dngr_cleanup` is called.
  */
-void dngr_swap(DngrDomain* dom, void* prot_ptr, void* new_val, int flags);
+void dngr_swap(DngrDomain* dom, uintptr_t* prot_ptr, uintptr_t new_val, int flags);
 
 /*
  * Just like `dngr_swap`, except it swaps the contents of the shared pointer if and only if the old value matches
