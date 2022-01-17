@@ -11,7 +11,6 @@ DngrDomain* dngr_domain_new(void (*deallocator)(void*)) {
 		return NULL;
 
 	dom->deallocator = deallocator;
-
 	return dom;
 }
 
@@ -29,18 +28,18 @@ void dngr_domain_free(DngrDomain* dom) {
 	free(dom);
 }
 
-void* dngr_load(DngrDomain* dom, void* prot_ptr) {
-	const void* const nullptr = NULL;
-	void* val;
-	void* tmp;
+uintptr_t dngr_load(DngrDomain* dom, uintptr_t* prot_ptr) {
+	const uintptr_t nullptr = 0;
+	uintptr_t val;
+	uintptr_t tmp;
 	DngrPtr* node;
 
 	while (1) {
 
-		val = atomic_load((void**)prot_ptr);
+		val = atomic_load(prot_ptr);
 		node = __dngr_list_insert_or_append(&dom->pointers, val);
 
-		if (atomic_load((void**)prot_ptr) == val)
+		if (atomic_load(prot_ptr) == val)
 			break;
 
 		/*
@@ -56,41 +55,42 @@ void* dngr_load(DngrDomain* dom, void* prot_ptr) {
 	return val;
 }
 
-void dngr_drop(DngrDomain* dom, void* safe_val) {
+void dngr_drop(DngrDomain* dom, uintptr_t safe_val) {
 
 	if (!__dngr_list_remove(&dom->pointers, safe_val))
 		__builtin_unreachable();
 }
 
-void dngr_swap(DngrDomain* dom, void* prot_ptr, void* new_obj, int flags) {
-	void* old_obj;
-	int protected;
+static void __dngr_cleanup_ptr(DngrDomain* dom, uintptr_t ptr, int flags) {
 
-	old_obj = atomic_exchange((void**)prot_ptr, new_obj);
-	protected = __dngr_list_contains(&dom->pointers, old_obj);
-
-	if (!protected) {
+	if (!__dngr_list_contains(&dom->pointers, ptr)) {
 
 		/* We can deallocate straight away */
-		dom->deallocator(old_obj);
+		dom->deallocator((void*)ptr);
 
 	} else if (flags & DNGR_DEFER_DEALLOC) {
 
 		/* Defer deallocation for later */
-		__dngr_list_insert_or_append(&dom->retired, old_obj);
+		__dngr_list_insert_or_append(&dom->retired, ptr);
 
 	} else {
 
 		/* Spin until all readers are done, then deallocate */
-		while (__dngr_list_contains(&dom->pointers, old_obj));
-		dom->deallocator(old_obj);
-
+		while (__dngr_list_contains(&dom->pointers, ptr));
+		dom->deallocator((void*)ptr);
 	}
+}
+
+void dngr_swap(DngrDomain* dom, uintptr_t* prot_ptr, uintptr_t new_val, int flags) {
+	uintptr_t old_obj;
+
+	old_obj = atomic_exchange(prot_ptr, new_val);
+	__dngr_cleanup_ptr(dom, old_obj, flags);
 }
 
 void dngr_cleanup(DngrDomain* dom, int flags) {
 	DngrPtr* node;
-	void* ptr;
+	uintptr_t ptr;
 
 	DNGR_LIST_ITER(&dom->retired, node) {
 
@@ -100,14 +100,14 @@ void dngr_cleanup(DngrDomain* dom, int flags) {
 
 			/* We can deallocate straight away */
 			if (__dngr_list_remove(&dom->retired, ptr))
-				dom->deallocator(ptr);
+				dom->deallocator((void*)ptr);
 
 		} else if (!(flags & DNGR_DEFER_DEALLOC)) {
 
 			/* Spin until all readers are done, then deallocate */
 			while (__dngr_list_contains(&dom->pointers, ptr));
 			if (__dngr_list_remove(&dom->retired, ptr))
-				dom->deallocator(ptr);
+				dom->deallocator((void*)ptr);
 		}
 		
 	}

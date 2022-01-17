@@ -4,10 +4,10 @@
 
 #include "dngr_list.h"
 
-#define W1 (void*)0xdeadbeef
-#define W2 (void*)0xdeafbabe
-#define W3 (void*)0xbadf00d
-#define W4 (void*)0xba5eba11
+#define W1 (uintptr_t)0xdeadbeef
+#define W2 (uintptr_t)0xdeafbabe
+#define W3 (uintptr_t)0xbadf00d
+#define W4 (uintptr_t)0xba5eba11
 
 #define ASSERT_OR(exp, s) assert(exp); printf("[+] %s\n", s);
 
@@ -37,7 +37,7 @@ int main() {
 
 	ASSERT_OR(__dngr_list_remove(&head, W3), "list_remove 1")
 	ASSERT_OR(!__dngr_list_contains(&head, W3), "list_remove 2")
-	ASSERT_OR(head->ptr == NULL, "list_remove 3")
+	ASSERT_OR(head->ptr == (uintptr_t)NULL, "list_remove 3")
 	ASSERT_OR(__dngr_list_contains(&head, W1), "list_remove 4")
 
 	__dngr_list_insert_or_append(&head, W3);

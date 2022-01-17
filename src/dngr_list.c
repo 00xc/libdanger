@@ -4,7 +4,7 @@
 #include "dngr_list.h"
 
 /* Allocate a new node with specified value and append to list */
-static DngrPtr* __dngr_list_append(DngrPtr** head, void* ptr) {
+static DngrPtr* __dngr_list_append(DngrPtr** head, uintptr_t ptr) {
 	DngrPtr* new;
 	DngrPtr* old;
 
@@ -26,34 +26,34 @@ static DngrPtr* __dngr_list_append(DngrPtr** head, void* ptr) {
  * Attempt to find an empty node to store value, otherwise append a new node.
  * Returns the node containing the newly added value.
  */
-DngrPtr* __dngr_list_insert_or_append(DngrPtr** head, void* val) {
+DngrPtr* __dngr_list_insert_or_append(DngrPtr** head, uintptr_t ptr) {
 	DngrPtr* node;
-	void* expected;
+	uintptr_t expected;
 	int need_alloc = 1;
 
 	DNGR_LIST_ITER(head, node) {
 		expected = atomic_load(&node->ptr);
-		if (expected == NULL && atomic_cas(&node->ptr, &expected, &val)) {
+		if (expected == 0 && atomic_cas(&node->ptr, &expected, &ptr)) {
 			need_alloc = 0;
 			break;
 		}
 	}
 
 	if (need_alloc)
-		node = __dngr_list_append(head, val);
+		node = __dngr_list_append(head, ptr);
 
 	return node;
 }
 
 /* Remove a node from the list with the specified value */
-int __dngr_list_remove(DngrPtr** head, void* val) {
+int __dngr_list_remove(DngrPtr** head, uintptr_t ptr) {
 	DngrPtr* node;
-	void* expected;
-	void* new = NULL;
+	uintptr_t expected;
+	const uintptr_t nullptr = 0;
 
 	DNGR_LIST_ITER(head, node) {
 		expected = atomic_load(&node->ptr);
-		if (expected == val && atomic_cas(&node->ptr, &expected, &new))
+		if (expected == ptr && atomic_cas(&node->ptr, &expected, &nullptr))
 			return 1;
 	}
 
@@ -61,11 +61,11 @@ int __dngr_list_remove(DngrPtr** head, void* val) {
 }
 
 /* Returns 1 if the list currently contains an node with the specified value */
-int __dngr_list_contains(DngrPtr** head, void* val) {
+int __dngr_list_contains(DngrPtr** head, uintptr_t ptr) {
 	DngrPtr* node;
 
 	DNGR_LIST_ITER(head, node) {
-		if (atomic_load(&node->ptr) == val)
+		if (atomic_load(&node->ptr) == ptr)
 			return 1;
 	}
 

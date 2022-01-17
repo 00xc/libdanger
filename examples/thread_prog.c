@@ -67,9 +67,9 @@ void* reader_thread(void* arg) {
 	pthread_yield();
 
 	for (i = 0; i < NUM_ITERS; ++i) {
-		safe_config = dngr_load(config_dom, &shared_config);
+		safe_config = (Config*)dngr_load(config_dom, (uintptr_t*)&shared_config);
 		print_config("read config    ", safe_config);
-		dngr_drop(config_dom, safe_config);
+		dngr_drop(config_dom, (uintptr_t)safe_config);
 		pthread_yield();
 		pthread_yield();
 		pthread_yield();
@@ -91,7 +91,7 @@ void* writer_thread(void* arg) {
 		new_config->v2 = rand();
 		new_config->v3 = rand();
 		print_config("updating config", new_config);
-		dngr_swap(config_dom, &shared_config, new_config, 0);
+		dngr_swap(config_dom, (uintptr_t*)&shared_config, (uintptr_t)new_config, 0);
 		print_config("updated config ", new_config);
 		pthread_yield();
 		pthread_yield();
