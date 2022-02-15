@@ -21,7 +21,7 @@ void dngr_domain_free(DngrDomain* dom);
  * Load a safe pointer to a shared object. This pointer must be passed to `dngr_drop` once it is
  * no longer needed
  */
-uintptr_t dngr_load(DngrDomain* dom, uintptr_t* prot_ptr);
+uintptr_t dngr_load(DngrDomain* dom, const uintptr_t* prot_ptr);
 
 /*
  * Drop a safe pointer to a shared object. This pointer (`safe_val`) must have come from

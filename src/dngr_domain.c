@@ -28,7 +28,7 @@ void dngr_domain_free(DngrDomain* dom) {
 	free(dom);
 }
 
-uintptr_t dngr_load(DngrDomain* dom, uintptr_t* prot_ptr) {
+uintptr_t dngr_load(DngrDomain* dom, const uintptr_t* prot_ptr) {
 	const uintptr_t nullptr = 0;
 	uintptr_t val;
 	uintptr_t tmp;
@@ -38,7 +38,8 @@ uintptr_t dngr_load(DngrDomain* dom, uintptr_t* prot_ptr) {
 
 		val = atomic_load(prot_ptr);
 		node = __dngr_list_insert_or_append(&dom->pointers, val);
-
+		
+		/* Hazard pointer inserted successfully */
 		if (atomic_load(prot_ptr) == val)
 			break;
 
@@ -82,9 +83,7 @@ static void __dngr_cleanup_ptr(DngrDomain* dom, uintptr_t ptr, int flags) {
 }
 
 void dngr_swap(DngrDomain* dom, uintptr_t* prot_ptr, uintptr_t new_val, int flags) {
-	uintptr_t old_obj;
-
-	old_obj = atomic_exchange(prot_ptr, new_val);
+	const uintptr_t old_obj = atomic_exchange(prot_ptr, new_val);
 	__dngr_cleanup_ptr(dom, old_obj, flags);
 }
 
@@ -121,6 +120,6 @@ void dngr_cleanup(DngrDomain* dom, int flags) {
 			if (__dngr_list_remove(&dom->retired, ptr))
 				dom->deallocator((void*)ptr);
 		}
-		
+
 	}
 }
