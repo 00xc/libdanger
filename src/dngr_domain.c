@@ -38,10 +38,13 @@ uintptr_t dngr_load(DngrDomain* dom, const uintptr_t* prot_ptr) {
 
 		val = atomic_load(prot_ptr);
 		node = __dngr_list_insert_or_append(&dom->pointers, val);
-		
+
+		if (node == NULL)
+			return 0;
+
 		/* Hazard pointer inserted successfully */
 		if (atomic_load(prot_ptr) == val)
-			break;
+			return val;
 
 		/*
 		 * This pointer is being retired by another thread - remove this hazard pointer
@@ -52,8 +55,6 @@ uintptr_t dngr_load(DngrDomain* dom, const uintptr_t* prot_ptr) {
 		if (!atomic_cas(&node->ptr, &tmp, &nullptr))
 			__dngr_list_remove(&dom->pointers, val);
 	}
-
-	return val;
 }
 
 void dngr_drop(DngrDomain* dom, uintptr_t safe_val) {
