@@ -21,8 +21,9 @@ typedef struct {
 	uint v3;
 } Config;
 
-Config* shared_config;
-DngrDomain* config_dom;
+static Config* shared_config;
+static DngrDomain* config_dom;
+static pthread_barrier_t barrier;
 
 Config* create_config() {
 	Config* out;
@@ -33,7 +34,7 @@ Config* create_config() {
 	return out;
 }
 
-void delete_config(Config* conf) {
+void delete_config(void* conf) {
 	assert(conf != NULL);
 	free(conf);
 }
@@ -48,6 +49,8 @@ void init() {
 	config_dom = dngr_domain_new(delete_config);
 	if (config_dom == NULL)
 		err(EXIT_FAILURE, "dngr_domain_new");
+	if (pthread_barrier_init(&barrier, NULL, NUM_READERS + NUM_WRITERS) != 0)
+		err(EXIT_FAILURE, "pthread_barrier_init");
 }
 
 void deinit() {
@@ -58,8 +61,13 @@ void deinit() {
 void* reader_thread(void* arg) {
 	Config* safe_config;
 	unsigned long i;
+	int ret;
 
 	(void)arg;
+
+	ret = pthread_barrier_wait(&barrier);
+	if (ret != 0 && ret != PTHREAD_BARRIER_SERIAL_THREAD)
+		err(EXIT_FAILURE, "pthread_barrier_wait");
 
 	for (i = 0; i < NUM_ITERS; ++i) {
 
@@ -77,8 +85,13 @@ void* reader_thread(void* arg) {
 void* writer_thread(void* arg) {
 	Config* new_config;
 	uint i;
+	int ret;
 
 	(void)arg;
+
+	ret = pthread_barrier_wait(&barrier);
+	if (ret != 0 && ret != PTHREAD_BARRIER_SERIAL_THREAD)
+		err(EXIT_FAILURE, "pthread_barrier_wait");
 
 	for (i = 0; i < NUM_ITERS/2; ++i) {
 
