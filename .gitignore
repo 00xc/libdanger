@@ -1,2 +1,4 @@
 *.o
 *.a
+tests/test_list
+examples/thread_prog
