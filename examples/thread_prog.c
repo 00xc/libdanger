@@ -56,6 +56,7 @@ void init() {
 void deinit() {
 	delete_config(shared_config);
 	dngr_domain_free(config_dom);
+	pthread_barrier_destroy(&barrier);
 }
 
 void* reader_thread(void* arg) {
