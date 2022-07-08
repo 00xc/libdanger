@@ -1,4 +1,4 @@
-CFLAGS = -Wall -Wextra -Wpedantic -O3 -std=c89 -Isrc/
+CFLAGS = -Wall -Wextra -Wpedantic -O3 -std=c89 -Iinclude/
 TEST_FLAGS = -fsanitize=address,undefined
 
 OBJS = dngr_domain.o dngr_list.o
