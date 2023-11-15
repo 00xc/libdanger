@@ -17,7 +17,7 @@ static DngrPtr* __dngr_list_append(DngrPtr** head, uintptr_t ptr) {
 
 	do {
 		new->next = old;
-	} while (!atomic_cas(head, &old, &new));
+	} while (!atomic_cas_weak(head, &old, &new));
 
 	return new;
 }
