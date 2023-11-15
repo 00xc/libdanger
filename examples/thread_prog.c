@@ -10,7 +10,7 @@
 
 #define NUM_READERS 1
 #define NUM_WRITERS 1
-#define NUM_ITERS 20
+#define NUM_ITERS 200000
 #define ARR_SIZE(x) sizeof(x)/sizeof(*x)
 
 typedef unsigned int uint;
@@ -71,7 +71,6 @@ void* reader_thread(void* arg) {
 		err(EXIT_FAILURE, "pthread_barrier_wait");
 
 	for (i = 0; i < NUM_ITERS; ++i) {
-
 		safe_config = (Config*)dngr_load(config_dom, (uintptr_t*)&shared_config);
 		if (safe_config == NULL)
 			err(EXIT_FAILURE, "dngr_load");
@@ -94,8 +93,7 @@ void* writer_thread(void* arg) {
 	if (ret != 0 && ret != PTHREAD_BARRIER_SERIAL_THREAD)
 		err(EXIT_FAILURE, "pthread_barrier_wait");
 
-	for (i = 0; i < NUM_ITERS/2; ++i) {
-
+	for (i = 0; i < NUM_ITERS / 2; ++i) {
 		new_config = create_config();
 		new_config->v1 = rand();
 		new_config->v2 = rand();
