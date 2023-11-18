@@ -43,12 +43,16 @@ void dngr_drop(DngrDomain* dom, uintptr_t safe_val);
  * held in order to deallocate it. If flags is `DNGR_DEFER_DEALLOC`, the old object will only be
  * deallocated if there are already no references to it; otherwise the cleanup will be done the
  * next time `dngr_cleanup` is called.
+ *
+ * `new_val` is not safe to dereference once this function is called.
  */
 void dngr_swap(DngrDomain* dom, uintptr_t* prot_ptr, uintptr_t new_val, int flags);
 
 /*
  * Just like `dngr_swap`, except it swaps the contents of the shared pointer if and only if the old value matches
  * `expected_val`. Returns 1 if the swap succeeded, 0 if it failed because the expected value did not match.
+ *
+ * If the swap succeeds, `new_val` is not safe to dereference.
  */
 int dngr_compare_and_swap(DngrDomain* dom, uintptr_t* prot_ptr, uintptr_t expected_val, uintptr_t new_val, int flags);
 

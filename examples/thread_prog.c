@@ -84,6 +84,7 @@ void* reader_thread(void* arg) {
 
 void* writer_thread(void* arg) {
 	Config* new_config;
+	Config updated_config;
 	uint i;
 	int ret;
 
@@ -98,10 +99,11 @@ void* writer_thread(void* arg) {
 		new_config->v1 = rand();
 		new_config->v2 = rand();
 		new_config->v3 = rand();
-		print_config("updating config", new_config);
+		memcpy(&updated_config, new_config, sizeof(Config));
 
+		print_config("updating config", new_config);
 		dngr_swap(config_dom, (uintptr_t*)&shared_config, (uintptr_t)new_config, 0);
-		print_config("updated config ", new_config);
+		print_config("updated config ", &updated_config);
 	}
 
 	return NULL;
